@@ -1,0 +1,55 @@
+# Add an EC2 instance and Security Group
+
+Parameters:
+  VpcCidr:
+    Default: 10.10.0.0/16
+    Type: String
+
+  PublicSubnetCidr:
+    Default: 10.10.0.0/24
+    Type: String
+
+  ImageId:
+    Default: ami-4191b524
+    Type: String
+
+  InstanceType:
+    Default: t2.micro
+    Type: String
+
+  KeyName:
+    Default: AWS-STL-Meetup
+    Type: String
+
+Resources:
+  Vpc:
+    Type: "AWS::EC2::VPC"
+    Properties: 
+      CidrBlock: !Ref VpcCidr
+
+  PublicSubnet:
+    Type: "AWS::EC2::Subnet"
+    Properties: 
+      CidrBlock: !Ref PublicSubnetCidr
+      VpcId: !Ref Vpc
+
+  BastionSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties: 
+      GroupDescription: Bastion Security Group
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: 22
+          IpProtocol: tcp
+          ToPort: 22
+      VpcId: !Ref Vpc
+
+  BastionInstance:
+    Type: "AWS::EC2::Instance"
+    Properties: 
+      ImageId: !Ref ImageId
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      SecurityGroupIds: 
+        - !Ref BastionSecurityGroup
+      SubnetId: !Ref PublicSubnet

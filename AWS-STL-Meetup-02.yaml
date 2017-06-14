@@ -1,0 +1,12 @@
+# Parameterize the VPC CIDR block
+
+Parameters:
+  Vpc01Cidr:
+    Default: 10.10.0.0/16
+    Type: String
+
+Resources:
+  Vpc01:
+    Type: "AWS::EC2::VPC"
+    Properties: 
+      CidrBlock: !Ref Vpc01Cidr

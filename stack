@@ -1,0 +1,14 @@
+#!/bin/bash
+region=us-east-2
+profile=slalom
+owner=astrostl
+
+stackit() {
+  aws --region "$region" --profile "$profile" cloudformation "${1}-stack" \
+   --tags "Key=Name,Value=CFN-${2}" "Key=Owner,Value=${owner}" \
+   "Key=Environment,Value=Demo" --stack-name "$2" --template-body "file://${3}"
+}
+
+if ! stackit create "$1" "$2"; then
+  stackit update "$1" "$2"
+fi

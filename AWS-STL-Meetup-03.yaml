@@ -1,0 +1,22 @@
+# Add a subnet
+
+Parameters:
+  VpcCidr:
+    Default: 10.10.0.0/16
+    Type: String
+
+  PublicSubnetCidr:
+    Default: 10.10.0.0/24
+    Type: String
+
+Resources:
+  Vpc:
+    Type: "AWS::EC2::VPC"
+    Properties: 
+      CidrBlock: !Ref VpcCidr
+
+  PublicSubnet:
+    Type: "AWS::EC2::Subnet"
+    Properties: 
+      CidrBlock: !Ref PublicSubnetCidr
+      VpcId: !Ref Vpc

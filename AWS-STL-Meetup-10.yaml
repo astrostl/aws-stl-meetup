@@ -1,0 +1,133 @@
+# Add a private EC2 instance with its own Security Group to the private subnet
+
+Parameters:
+  VpcCidr:
+    Default: 10.10.0.0/16
+    Type: String
+
+  PublicSubnetCidr:
+    Default: 10.10.0.0/24
+    Type: String
+
+  PrivateSubnetCidr:
+    Default: 10.10.1.0/24
+    Type: String
+
+  ImageId:
+    Default: ami-4191b524
+    Type: String
+
+  InstanceType:
+    Default: t2.micro
+    Type: String
+
+  KeyName:
+    Default: AWS-STL-Meetup
+    Type: String
+
+Resources:
+  Vpc:
+    Type: "AWS::EC2::VPC"
+    Properties: 
+      CidrBlock: !Ref VpcCidr
+
+  InternetGateway:
+    Type: "AWS::EC2::InternetGateway"
+
+  InternetGatewayAttachment:
+    Type: "AWS::EC2::VPCGatewayAttachment"
+    Properties: 
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref Vpc
+
+  PublicSubnet:
+    Type: "AWS::EC2::Subnet"
+    Properties: 
+      CidrBlock: !Ref PublicSubnetCidr
+      VpcId: !Ref Vpc
+
+  PublicSubnetRouteTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties: 
+      VpcId: !Ref Vpc
+
+  PublicSubnetRouteTableAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties: 
+      RouteTableId: !Ref PublicSubnetRouteTable
+      SubnetId: !Ref PublicSubnet
+
+  PublicSubnetDefaultRoute:
+    Type: "AWS::EC2::Route"
+    Properties: 
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref PublicSubnetRouteTable
+
+  PrivateSubnet:
+    Type: "AWS::EC2::Subnet"
+    Properties: 
+      CidrBlock: !Ref PrivateSubnetCidr
+      VpcId: !Ref Vpc
+
+  PrivateSubnetRouteTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties: 
+      VpcId: !Ref Vpc
+
+  PrivateSubnetRouteTableAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties: 
+      RouteTableId: !Ref PrivateSubnetRouteTable
+      SubnetId: !Ref PrivateSubnet
+
+  BastionSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties: 
+      GroupDescription: Bastion Security Group
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: 22
+          IpProtocol: tcp
+          ToPort: 22
+        - CidrIp: 0.0.0.0/0
+          FromPort: -1
+          IpProtocol: icmp
+          ToPort: -1
+      VpcId: !Ref Vpc
+
+  BastionInstance:
+    Type: "AWS::EC2::Instance"
+    Properties: 
+      ImageId: !Ref ImageId
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      SecurityGroupIds: 
+        - !Ref BastionSecurityGroup
+      SubnetId: !Ref PublicSubnet
+
+  BastionInstanceElasticIp:
+    Type: "AWS::EC2::EIP"
+    Properties:
+      InstanceId: !Ref BastionInstance
+
+  PrivateSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties: 
+      GroupDescription: Private Security Group
+      SecurityGroupIngress:
+        - SourceSecurityGroupId: !Ref BastionSecurityGroup
+          FromPort: 22
+          IpProtocol: tcp
+          ToPort: 22
+      VpcId: !Ref Vpc
+
+  PrivateInstance:
+    Type: "AWS::EC2::Instance"
+    Properties: 
+      ImageId: !Ref ImageId
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      SecurityGroupIds: 
+        - !Ref PrivateSecurityGroup
+      SubnetId: !Ref PrivateSubnet
