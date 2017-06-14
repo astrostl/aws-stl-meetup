@@ -3,8 +3,8 @@
 Recommendations for the AWS STL Meetup CloudFormation workshop:
 - an AWS account with a powerful IAM user that has API access keys
 - an EC2 key pair named "AWS-STL-Meetup"
-- the AWS CLI: https://aws.amazon.com/cli/ with a configured profile
-- Visual Studio Code: https://code.visualstudio.com
+- the AWS CLI from https://aws.amazon.com/cli/ with a configured profile
+- Visual Studio Code from https://code.visualstudio.com
 - the GNU Bash shell and SSH (see below for Windows options)
 
 Template steps:
