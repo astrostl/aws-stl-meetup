@@ -40,6 +40,15 @@ Resources:
       InternetGatewayId: !Ref InternetGateway
       VpcId: !Ref Vpc
 
+  NatGatewayElasticIp:
+    Type: "AWS::EC2::EIP"
+  
+  NatGateway:
+    Type: "AWS::EC2::NatGateway"
+    Properties: 
+      AllocationId: !GetAtt NatGatewayElasticIp.AllocationId
+      SubnetId: !Ref PublicSubnet
+
   PublicSubnet:
     Type: "AWS::EC2::Subnet"
     Properties: 
@@ -138,12 +147,3 @@ Resources:
       SecurityGroupIds: 
         - !Ref PrivateSecurityGroup
       SubnetId: !Ref PrivateSubnet
-
-  NatGatewayElasticIp:
-    Type: "AWS::EC2::EIP"
-  
-  NatGateway:
-    Type: "AWS::EC2::NatGateway"
-    Properties: 
-      AllocationId: !GetAtt NatGatewayElasticIp.AllocationId
-      SubnetId: !Ref PublicSubnet
