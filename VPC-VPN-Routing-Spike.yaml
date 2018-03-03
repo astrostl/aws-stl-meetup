@@ -1,0 +1,287 @@
+Parameters:
+  VpcACidr:
+    Default: 10.10.0.0/24
+    Type: String
+
+  PublicSubnetACidr:
+    Default: 10.10.0.0/24
+    Type: String
+
+  VpcBCidr:
+    Default: 10.11.0.0/24
+    Type: String
+
+  PublicSubnetBCidr:
+    Default: 10.11.0.0/24
+    Type: String
+
+  VpcCCidr:
+    Default: 10.12.0.0/24
+    Type: String
+
+  PublicSubnetCCidr:
+    Default: 10.12.0.0/24
+    Type: String
+
+  ImageId:
+    Default: ami-710e2414
+    Type: String
+
+  InstanceType:
+    Default: t2.micro
+    Type: String
+
+  KeyName:
+    Default: jhono-slalom
+    Type: String
+
+Resources:
+  VpcA:
+    Type: "AWS::EC2::VPC"
+    Properties: 
+      CidrBlock: !Ref VpcACidr
+
+  PublicSubnetA:
+    Type: "AWS::EC2::Subnet"
+    Properties: 
+      CidrBlock: !Ref PublicSubnetACidr
+      VpcId: !Ref VpcA
+
+  BastionSecurityGroupA:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties: 
+      GroupDescription: Bastion Security Group
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: 22
+          IpProtocol: tcp
+          ToPort: 22
+        - CidrIp: 0.0.0.0/0
+          FromPort: -1
+          IpProtocol: icmp
+          ToPort: -1
+      VpcId: !Ref VpcA
+
+  BastionInstanceA:
+    Type: "AWS::EC2::Instance"
+    Properties: 
+      ImageId: !Ref ImageId
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      SecurityGroupIds: 
+        - !Ref BastionSecurityGroupA
+      SubnetId: !Ref PublicSubnetA
+
+  BastionInstanceAElasticIp:
+    Type: "AWS::EC2::EIP"
+    Properties:
+      InstanceId: !Ref BastionInstanceA
+
+  InternetGatewayA:
+    Type: "AWS::EC2::InternetGateway"
+
+  InternetGatewayAAttachment:
+    Type: "AWS::EC2::VPCGatewayAttachment"
+    Properties: 
+      InternetGatewayId: !Ref InternetGatewayA
+      VpcId: !Ref VpcA
+
+  PublicSubnetRouteTableA:
+    Type: "AWS::EC2::RouteTable"
+    Properties: 
+      VpcId: !Ref VpcA
+
+  PublicSubnetRouteTableAAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties: 
+      RouteTableId: !Ref PublicSubnetRouteTableA
+      SubnetId: !Ref PublicSubnetA
+
+  PublicSubnetDefaultRouteA:
+    Type: "AWS::EC2::Route"
+    Properties: 
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGatewayA
+      RouteTableId: !Ref PublicSubnetRouteTableA
+
+  VpcB:
+    Type: "AWS::EC2::VPC"
+    Properties: 
+      CidrBlock: !Ref VpcBCidr
+
+  PublicSubnetB:
+    Type: "AWS::EC2::Subnet"
+    Properties: 
+      CidrBlock: !Ref PublicSubnetBCidr
+      VpcId: !Ref VpcB
+
+  BastionSecurityGroupB:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties: 
+      GroupDescription: Bastion Security Group
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: 22
+          IpProtocol: tcp
+          ToPort: 22
+        - CidrIp: 0.0.0.0/0
+          FromPort: -1
+          IpProtocol: icmp
+          ToPort: -1
+      VpcId: !Ref VpcB
+
+  BastionInstanceB:
+    Type: "AWS::EC2::Instance"
+    Properties: 
+      ImageId: !Ref ImageId
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      SecurityGroupIds: 
+        - !Ref BastionSecurityGroupB
+      SubnetId: !Ref PublicSubnetB
+
+  BastionInstanceBElasticIp:
+    Type: "AWS::EC2::EIP"
+    Properties:
+      InstanceId: !Ref BastionInstanceB
+
+  InternetGatewayB:
+    Type: "AWS::EC2::InternetGateway"
+
+  InternetGatewayBAttachment:
+    Type: "AWS::EC2::VPCGatewayAttachment"
+    Properties: 
+      InternetGatewayId: !Ref InternetGatewayB
+      VpcId: !Ref VpcB
+
+  PublicSubnetRouteTableB:
+    Type: "AWS::EC2::RouteTable"
+    Properties: 
+      VpcId: !Ref VpcB
+
+  PublicSubnetRouteTableBAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties: 
+      RouteTableId: !Ref PublicSubnetRouteTableB
+      SubnetId: !Ref PublicSubnetB
+
+  PublicSubnetDefaultRouteB:
+    Type: "AWS::EC2::Route"
+    Properties: 
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGatewayB
+      RouteTableId: !Ref PublicSubnetRouteTableB
+
+  VpcAVpcBPeeringConnection:
+    Type: "AWS::EC2::VPCPeeringConnection"
+    Properties: 
+      PeerVpcId: !Ref VpcB
+      VpcId: !Ref VpcA
+  
+  PublicSubnetPeeringRouteA:
+    Type: "AWS::EC2::Route"
+    Properties: 
+      DestinationCidrBlock: !Ref VpcBCidr
+      VpcPeeringConnectionId: !Ref VpcAVpcBPeeringConnection
+      RouteTableId: !Ref PublicSubnetRouteTableA
+
+  PublicSubnetPeeringRouteB:
+    Type: "AWS::EC2::Route"
+    Properties: 
+      DestinationCidrBlock: !Ref VpcACidr
+      VpcPeeringConnectionId: !Ref VpcAVpcBPeeringConnection
+      RouteTableId: !Ref PublicSubnetRouteTableB
+
+  VpcC:
+    Type: "AWS::EC2::VPC"
+    Properties: 
+      CidrBlock: !Ref VpcCCidr
+
+  PublicSubnetC:
+    Type: "AWS::EC2::Subnet"
+    Properties: 
+      CidrBlock: !Ref PublicSubnetCCidr
+      VpcId: !Ref VpcC
+
+  BastionSecurityGroupC:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties: 
+      GroupDescription: Bastion Security Group
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: 22
+          IpProtocol: tcp
+          ToPort: 22
+        - CidrIp: 0.0.0.0/0
+          FromPort: -1
+          IpProtocol: icmp
+          ToPort: -1
+      VpcId: !Ref VpcC
+
+  BastionInstanceC:
+    Type: "AWS::EC2::Instance"
+    Properties: 
+      ImageId: !Ref ImageId
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      SecurityGroupIds: 
+        - !Ref BastionSecurityGroupC
+      SubnetId: !Ref PublicSubnetC
+
+  BastionInstanceCElasticIp:
+    Type: "AWS::EC2::EIP"
+    Properties:
+      InstanceId: !Ref BastionInstanceC
+
+  InternetGatewayC:
+    Type: "AWS::EC2::InternetGateway"
+
+  InternetGatewayCAttachment:
+    Type: "AWS::EC2::VPCGatewayAttachment"
+    Properties: 
+      InternetGatewayId: !Ref InternetGatewayC
+      VpcId: !Ref VpcC
+
+  PublicSubnetRouteTableC:
+    Type: "AWS::EC2::RouteTable"
+    Properties: 
+      VpcId: !Ref VpcC
+
+  PublicSubnetRouteTableCAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties: 
+      RouteTableId: !Ref PublicSubnetRouteTableC
+      SubnetId: !Ref PublicSubnetC
+
+  PublicSubnetDefaultRouteC:
+    Type: "AWS::EC2::Route"
+    Properties: 
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGatewayC
+      RouteTableId: !Ref PublicSubnetRouteTableC
+
+  # CustomerGatewayC:
+  #   Type: "AWS::EC2::CustomerGateway"
+  #   Properties:
+  #     BgpAsn: 65000
+  #     IpAddress: !Ref BastionInstanceBElasticIp
+  #     Type: ipsec.1
+
+  # VpnGatewayC:
+  #   Type: "AWS::EC2::VPNGateway"
+  #   Properties: 
+  #     Type: ipsec.1
+
+  # VpnGatewayCAttach:
+  #   Type: "AWS::EC2::VPCGatewayAttachment"
+  #   Properties: 
+  #     VpcId: !Ref VpcC
+  #     VpnGatewayId: !Ref VpnGatewayC
+  
+  # VpnConnectionC:
+  #   Type: "AWS::EC2::VPNConnection"
+  #   Properties: 
+  #     Type: ipsec.1
+  #     CustomerGatewayId: !Ref CustomerGatewayC
+  #     StaticRoutesOnly: true
+  #     VpnGatewayId: !Ref VpnGatewayC
