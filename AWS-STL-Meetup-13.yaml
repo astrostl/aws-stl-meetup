@@ -1,4 +1,4 @@
-# Add a NAT Gateway
+# Fix the NAT Gateway allocation ID
 
 Parameters:
   VpcCidr:
@@ -25,6 +25,14 @@ Parameters:
     Default: AWS-STL-Meetup
     Type: String
 
+  WebInstanceIp:
+    Default: 10.10.0.10
+    Type: String
+
+  BackendInstanceIp:
+    Default: 10.10.1.10
+    Type: String
+
 Resources:
   Vpc:
     Type: "AWS::EC2::VPC"
@@ -46,7 +54,7 @@ Resources:
   NatGateway:
     Type: "AWS::EC2::NatGateway"
     Properties: 
-      AllocationId: !Ref NatGatewayElasticIp
+      AllocationId: !GetAtt NatGatewayElasticIp.AllocationId
       SubnetId: !Ref PublicSubnet
 
   PublicSubnet:
@@ -114,6 +122,7 @@ Resources:
       SecurityGroupIds: 
         - !Ref WebSecurityGroup
       SubnetId: !Ref PublicSubnet
+      PrivateIpAddress: !Ref WebInstanceIp
       UserData:
         Fn::Base64:
           !Sub |
@@ -147,11 +156,4 @@ Resources:
       SecurityGroupIds: 
         - !Ref BackendSecurityGroup
       SubnetId: !Ref PrivateSubnet
-      UserData:
-        Fn::Base64:
-          !Sub |
-              #!/bin/bash
-              amazon-linux-extras install nginx1.12
-              echo 'hello from the backend!' > /usr/share/nginx/html/index.html
-              service nginx start
-              chkconfig nginx on
+      PrivateIpAddress: !Ref BackendInstanceIp

@@ -1,4 +1,4 @@
-# Fix the NAT Gateway allocation ID
+# Add a default route through the NAT Gateway to the private subnet
 
 Parameters:
   VpcCidr:
@@ -23,6 +23,14 @@ Parameters:
 
   KeyName:
     Default: AWS-STL-Meetup
+    Type: String
+
+  WebInstanceIp:
+    Default: 10.10.0.10
+    Type: String
+
+  BackendInstanceIp:
+    Default: 10.0.1.10
     Type: String
 
 Resources:
@@ -90,6 +98,13 @@ Resources:
       RouteTableId: !Ref PrivateSubnetRouteTable
       SubnetId: !Ref PrivateSubnet
 
+  PrivateSubnetDefaultRoute:
+    Type: "AWS::EC2::Route"
+    Properties: 
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+      RouteTableId: !Ref PrivateSubnetRouteTable
+
   WebSecurityGroup:
     Type: "AWS::EC2::SecurityGroup"
     Properties: 
@@ -114,6 +129,7 @@ Resources:
       SecurityGroupIds: 
         - !Ref WebSecurityGroup
       SubnetId: !Ref PublicSubnet
+      PrivateIpAddress: !Ref WebInstanceIp
       UserData:
         Fn::Base64:
           !Sub |
@@ -147,11 +163,4 @@ Resources:
       SecurityGroupIds: 
         - !Ref BackendSecurityGroup
       SubnetId: !Ref PrivateSubnet
-      UserData:
-        Fn::Base64:
-          !Sub |
-              #!/bin/bash
-              amazon-linux-extras install nginx1.12
-              echo 'hello from the backend!' > /usr/share/nginx/html/index.html
-              service nginx start
-              chkconfig nginx on
+      PrivateIpAddress: !Ref BackendInstanceIp

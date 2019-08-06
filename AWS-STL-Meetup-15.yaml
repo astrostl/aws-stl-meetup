@@ -1,4 +1,4 @@
-# Add a default route through the NAT Gateway to the private subnet
+# Switch to a proxy model
 
 Parameters:
   VpcCidr:
@@ -23,6 +23,14 @@ Parameters:
 
   KeyName:
     Default: AWS-STL-Meetup
+    Type: String
+
+  WebInstanceIp:
+    Default: 10.10.0.10
+    Type: String
+
+  BackendInstanceIp:
+    Default: 10.10.1.10
     Type: String
 
 Resources:
@@ -121,11 +129,20 @@ Resources:
       SecurityGroupIds: 
         - !Ref WebSecurityGroup
       SubnetId: !Ref PublicSubnet
+      PrivateIpAddress: !Ref WebInstanceIp
       UserData:
         Fn::Base64:
           !Sub |
               #!/bin/bash
               amazon-linux-extras install nginx1.12
+              sed -i 's/default_server//' /etc/nginx/nginx.conf
+              echo 'server {' > /etc/nginx/conf.d/proxy.conf
+              echo '    listen 80;' >> /etc/nginx/conf.d/proxy.conf
+              echo '    server_name _ default_server;' >> /etc/nginx/conf.d/proxy.conf
+              echo '    location / {' >> /etc/nginx/conf.d/proxy.conf
+              echo '        proxy_pass http://10.10.1.10:80;' >> /etc/nginx/conf.d/proxy.conf
+              echo '    }' >> /etc/nginx/conf.d/proxy.conf
+              echo '}' >> /etc/nginx/conf.d/proxy.conf
               service nginx start
               chkconfig nginx on
 
@@ -147,6 +164,7 @@ Resources:
 
   BackendInstance:
     Type: "AWS::EC2::Instance"
+    DependsOn: PrivateSubnetDefaultRoute
     Properties: 
       ImageId: !Ref ImageId
       InstanceType: !Ref InstanceType
@@ -154,6 +172,7 @@ Resources:
       SecurityGroupIds: 
         - !Ref BackendSecurityGroup
       SubnetId: !Ref PrivateSubnet
+      PrivateIpAddress: !Ref BackendInstanceIp
       UserData:
         Fn::Base64:
           !Sub |

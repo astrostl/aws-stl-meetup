@@ -21,6 +21,10 @@ Parameters:
     Default: AWS-STL-Meetup
     Type: String
 
+  WebInstanceIp:
+    Default: 10.10.0.10
+    Type: String
+
 Resources:
   Vpc:
     Type: "AWS::EC2::VPC"
@@ -53,6 +57,7 @@ Resources:
       SecurityGroupIds: 
         - !Ref WebSecurityGroup
       SubnetId: !Ref PublicSubnet
+      PrivateIpAddress: !Ref WebInstanceIp
 
   WebInstanceElasticIp:
     Type: "AWS::EC2::EIP"
