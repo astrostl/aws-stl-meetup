@@ -28,7 +28,7 @@ Parameters:
     Type: String
 
   InstanceType:
-    Default: t2.micro
+    Default: t3.micro
     Type: String
 
   KeyName:

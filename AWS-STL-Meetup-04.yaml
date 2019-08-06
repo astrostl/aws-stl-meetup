@@ -10,11 +10,11 @@ Parameters:
     Type: String
 
   ImageId:
-    Default: ami-4191b524
+    Default: ami-0d8f6eb4f641ef691
     Type: String
 
   InstanceType:
-    Default: t2.micro
+    Default: t3.micro
     Type: String
 
   KeyName:
