@@ -1,4 +1,4 @@
-# Reorganize and add a private subnet with an empty route table
+# Add Nginx installation via user data
 
 Parameters:
   VpcCidr:
@@ -7,10 +7,6 @@ Parameters:
 
   PublicSubnetCidr:
     Default: 10.10.0.0/24
-    Type: String
-
-  PrivateSubnetCidr:
-    Default: 10.10.1.0/24
     Type: String
 
   ImageId:
@@ -31,6 +27,49 @@ Resources:
     Properties: 
       CidrBlock: !Ref VpcCidr
 
+  PublicSubnet:
+    Type: "AWS::EC2::Subnet"
+    Properties: 
+      CidrBlock: !Ref PublicSubnetCidr
+      VpcId: !Ref Vpc
+
+  WebSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties: 
+      GroupDescription: Web Security Group
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: 80
+          IpProtocol: tcp
+          ToPort: 80
+        - CidrIp: 0.0.0.0/0
+          FromPort: -1
+          IpProtocol: icmp
+          ToPort: -1
+      VpcId: !Ref Vpc
+
+  WebInstance:
+    Type: "AWS::EC2::Instance"
+    Properties: 
+      ImageId: !Ref ImageId
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      SecurityGroupIds: 
+        - !Ref WebSecurityGroup
+      SubnetId: !Ref PublicSubnet
+      UserData:
+        Fn::Base64:
+          !Sub |
+              #!/bin/bash
+              amazon-linux-extras install nginx1.12
+              service nginx start
+              chkconfig nginx on
+
+  WebInstanceElasticIp:
+    Type: "AWS::EC2::EIP"
+    Properties:
+      InstanceId: !Ref WebInstance
+
   InternetGateway:
     Type: "AWS::EC2::InternetGateway"
 
@@ -38,12 +77,6 @@ Resources:
     Type: "AWS::EC2::VPCGatewayAttachment"
     Properties: 
       InternetGatewayId: !Ref InternetGateway
-      VpcId: !Ref Vpc
-
-  PublicSubnet:
-    Type: "AWS::EC2::Subnet"
-    Properties: 
-      CidrBlock: !Ref PublicSubnetCidr
       VpcId: !Ref Vpc
 
   PublicSubnetRouteTable:
@@ -63,50 +96,3 @@ Resources:
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
       RouteTableId: !Ref PublicSubnetRouteTable
-
-  PrivateSubnet:
-    Type: "AWS::EC2::Subnet"
-    Properties: 
-      CidrBlock: !Ref PrivateSubnetCidr
-      VpcId: !Ref Vpc
-
-  PrivateSubnetRouteTable:
-    Type: "AWS::EC2::RouteTable"
-    Properties: 
-      VpcId: !Ref Vpc
-
-  PrivateSubnetRouteTableAssociation:
-    Type: "AWS::EC2::SubnetRouteTableAssociation"
-    Properties: 
-      RouteTableId: !Ref PrivateSubnetRouteTable
-      SubnetId: !Ref PrivateSubnet
-
-  BastionSecurityGroup:
-    Type: "AWS::EC2::SecurityGroup"
-    Properties: 
-      GroupDescription: Bastion Security Group
-      SecurityGroupIngress:
-        - CidrIp: 0.0.0.0/0
-          FromPort: 22
-          IpProtocol: tcp
-          ToPort: 22
-        - CidrIp: 0.0.0.0/0
-          FromPort: -1
-          IpProtocol: icmp
-          ToPort: -1
-      VpcId: !Ref Vpc
-
-  BastionInstance:
-    Type: "AWS::EC2::Instance"
-    Properties: 
-      ImageId: !Ref ImageId
-      InstanceType: !Ref InstanceType
-      KeyName: !Ref KeyName
-      SecurityGroupIds: 
-        - !Ref BastionSecurityGroup
-      SubnetId: !Ref PublicSubnet
-
-  BastionInstanceElasticIp:
-    Type: "AWS::EC2::EIP"
-    Properties:
-      InstanceId: !Ref BastionInstance

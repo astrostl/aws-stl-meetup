@@ -33,23 +33,23 @@ Resources:
       CidrBlock: !Ref PublicSubnetCidr
       VpcId: !Ref Vpc
 
-  BastionSecurityGroup:
+  WebSecurityGroup:
     Type: "AWS::EC2::SecurityGroup"
     Properties: 
-      GroupDescription: Bastion Security Group
+      GroupDescription: Web Security Group
       SecurityGroupIngress:
         - CidrIp: 0.0.0.0/0
-          FromPort: 22
+          FromPort: 80
           IpProtocol: tcp
-          ToPort: 22
+          ToPort: 80
       VpcId: !Ref Vpc
 
-  BastionInstance:
+  WebInstance:
     Type: "AWS::EC2::Instance"
     Properties: 
       ImageId: !Ref ImageId
       InstanceType: !Ref InstanceType
       KeyName: !Ref KeyName
       SecurityGroupIds: 
-        - !Ref BastionSecurityGroup
+        - !Ref WebSecurityGroup
       SubnetId: !Ref PublicSubnet

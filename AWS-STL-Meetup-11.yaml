@@ -1,4 +1,4 @@
-# Add a NAT Gateway
+# Add a private EC2 instance with its own Security Group to the private subnet
 
 Parameters:
   VpcCidr:
@@ -39,15 +39,6 @@ Resources:
     Properties: 
       InternetGatewayId: !Ref InternetGateway
       VpcId: !Ref Vpc
-
-  NatGatewayElasticIp:
-    Type: "AWS::EC2::EIP"
-  
-  NatGateway:
-    Type: "AWS::EC2::NatGateway"
-    Properties: 
-      AllocationId: !Ref NatGatewayElasticIp
-      SubnetId: !Ref PublicSubnet
 
   PublicSubnet:
     Type: "AWS::EC2::Subnet"
@@ -90,53 +81,60 @@ Resources:
       RouteTableId: !Ref PrivateSubnetRouteTable
       SubnetId: !Ref PrivateSubnet
 
-  BastionSecurityGroup:
+  WebSecurityGroup:
     Type: "AWS::EC2::SecurityGroup"
     Properties: 
-      GroupDescription: Bastion Security Group
+      GroupDescription: Web Security Group
       SecurityGroupIngress:
         - CidrIp: 0.0.0.0/0
-          FromPort: 22
+          FromPort: 80
           IpProtocol: tcp
-          ToPort: 22
+          ToPort: 80
         - CidrIp: 0.0.0.0/0
           FromPort: -1
           IpProtocol: icmp
           ToPort: -1
       VpcId: !Ref Vpc
 
-  BastionInstance:
+  WebInstance:
     Type: "AWS::EC2::Instance"
     Properties: 
       ImageId: !Ref ImageId
       InstanceType: !Ref InstanceType
       KeyName: !Ref KeyName
       SecurityGroupIds: 
-        - !Ref BastionSecurityGroup
+        - !Ref WebSecurityGroup
       SubnetId: !Ref PublicSubnet
+      UserData:
+        Fn::Base64:
+          !Sub |
+              #!/bin/bash
+              amazon-linux-extras install nginx1.12
+              service nginx start
+              chkconfig nginx on
 
-  BastionInstanceElasticIp:
+  WebInstanceElasticIp:
     Type: "AWS::EC2::EIP"
     Properties:
-      InstanceId: !Ref BastionInstance
+      InstanceId: !Ref WebInstance
 
-  PrivateSecurityGroup:
+  BackendSecurityGroup:
     Type: "AWS::EC2::SecurityGroup"
     Properties: 
-      GroupDescription: Private Security Group
+      GroupDescription: Backend Security Group
       SecurityGroupIngress:
-        - SourceSecurityGroupId: !Ref BastionSecurityGroup
-          FromPort: 22
+        - SourceSecurityGroupId: !Ref WebSecurityGroup
+          FromPort: 80
           IpProtocol: tcp
-          ToPort: 22
+          ToPort: 80
       VpcId: !Ref Vpc
 
-  PrivateInstance:
+  BackendInstance:
     Type: "AWS::EC2::Instance"
     Properties: 
       ImageId: !Ref ImageId
       InstanceType: !Ref InstanceType
       KeyName: !Ref KeyName
       SecurityGroupIds: 
-        - !Ref PrivateSecurityGroup
+        - !Ref BackendSecurityGroup
       SubnetId: !Ref PrivateSubnet
