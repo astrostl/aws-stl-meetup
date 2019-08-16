@@ -16,10 +16,12 @@ Template steps:
 - 06 Add and attach an Internet Gateway
 - 07 Open up ICMP
 - 08 Add and associate a route table with a default route to the Internet Gateway
-- 09 Reorganize and add a private subnet with an empty route table
-- 10 Add a private EC2 instance with its own Security Group to the private subnet
-- 11 Add a NAT Gateway
-- 12 Fix the NAT Gateway allocation ID
-- 13 Add a default route through the NAT Gateway to the private subnet
+- 09 Add Nginx installation via user data
+- 10 Reorganize and add a private subnet with an empty route table
+- 11 Add a private EC2 instance with its own Security Group to the private subnet
+- 12 Add a NAT Gateway
+- 13 Fix the NAT Gateway allocation ID
+- 14 Add a default route through the NAT Gateway to the private subnet
+- 15 Switch to a proxy model
 
 If on Windows, the "stack" shell script could be converted to a batch file or PowerShell script. In a pinch, the "build" commands could simply be run from a command prompt a la `aws --region us-east-2 --profile slalom cloudformation update-stack --tags Key=Name,Value=CFN-AWS-STL-Meetup-13 Key=Owner,Value=astrostl Key=Environment,Value=Demo --stack-name AWS-STL-Meetup-13 --template-body file:///Users/astrostl/src/aws-stl-meetup/AWS-STL-Meetup-13.yaml`, and the PuTTY utility at https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html could be used for SSH connectivity.
